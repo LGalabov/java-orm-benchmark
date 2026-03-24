@@ -44,14 +44,20 @@ Simple CRUD is not a representative workload. Aggregations, multi-table joins, C
 
 Each framework is implemented using the approach its own documentation recommends. If a framework has a canonical way to execute a join query, that is what we use.
 
-|Subject                    |Type           |Status |
-|---------------------------|---------------|-------|
-|Raw JDBC                   |Baseline       |Planned|
-|Hibernate 7 (Spring Boot 4)|Full ORM       |Planned|
-|jOOQ 3.x                   |Type-safe SQL  |Planned|
-|Micronaut Data             |Compile-time   |Planned|
-|JDBI 3                     |SQL convenience|Planned|
-|MyBatis 3                  |SQL mapping    |Planned|
+|#  |Subject                    |Framework    |Persistence                   |Pool                |Status |
+|---|---------------------------|-------------|------------------------------|--------------------|-------|
+|1  |`jdbc-raw`                 |None         |Raw JDBC                      |None (DriverManager)|Planned|
+|2  |`jdbc-hikari`              |None         |Raw JDBC                      |HikariCP            |Planned|
+|3  |`hibernate-standalone`     |None         |Hibernate 7                   |HikariCP            |Planned|
+|4  |`spring-data-jpa`          |Spring Boot 4|Spring Data JPA (Hibernate)   |HikariCP            |Planned|
+|5  |`spring-data-jdbc`         |Spring Boot 4|Spring Data JDBC              |HikariCP            |Planned|
+|6  |`spring-jooq`              |Spring Boot 4|jOOQ                          |HikariCP            |Planned|
+|7  |`spring-r2dbc`             |Spring Boot 4|Spring Data R2DBC             |R2DBC pool          |Planned|
+|8  |`quarkus-panache`          |Quarkus 3    |Panache (Hibernate)           |Agroal              |Planned|
+|9  |`quarkus-panache-reactive` |Quarkus 3    |Panache Reactive              |Vert.x              |Planned|
+|10 |`micronaut-data-jdbc`      |Micronaut 4  |Micronaut Data JDBC           |HikariCP            |Planned|
+|11 |`micronaut-data-jpa`       |Micronaut 4  |Micronaut Data JPA (Hibernate)|HikariCP            |Planned|
+|12 |`helidon-jpa`              |Helidon 4    |JPA (Hibernate)               |HikariCP            |Planned|
 
 ## Query Types
 
@@ -103,7 +109,7 @@ All results are published to a [public GitHub Gist](https://gist.github.com/LGal
 java-orm-benchmark/
 ├── common/                  Shared: domain model, config, seeding, result models
 ├── benchmark-harness/       Central JMH runner with ORM adapter pattern
-├── subjects/                One module per framework (orm-jdbc, orm-hibernate, etc.)
+├── subjects/                One module per subject (jdbc-raw, hibernate-standalone, etc.)
 ├── docker/                  Docker Compose for databases + benchmark runner
 ├── scripts/                 Automation: run benchmarks, upload results, generate reports
 ├── results/                 Benchmark output (gitignored locally, published to Gist)

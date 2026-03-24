@@ -11,14 +11,16 @@ The repo has a working Gradle multi-module skeleton with `common/` and `benchmar
 ```
 S1  Schema + Domain Model + Seeder
 S2  OrmAdapter interface + Harness wiring
-S3  JDBC baseline subject
+S3  JDBC baseline subjects (jdbc-raw, jdbc-hikari)
 S4  JMH benchmark methods
 S5  Results JSON + Gist upload
-S6  Hibernate subject
+S6  hibernate-standalone subject
 S7  Overhead profiling (stack depth, allocations)
-S8  jOOQ subject
-S9  Crossover analysis
-S10 Remaining subjects (JDBI, MyBatis, Micronaut Data)
+S8  Spring subjects (spring-data-jpa, spring-data-jdbc, spring-jooq)
+S9  spring-r2dbc + Crossover analysis
+S10a Quarkus subjects (quarkus-panache, quarkus-panache-reactive)
+S10b Micronaut subjects (micronaut-data-jdbc, micronaut-data-jpa)
+S10c helidon-jpa subject
 S11 Results Gist formatting
 S12 Docker benchmark runner
 S13 Results Site (GitHub Pages)
@@ -81,22 +83,22 @@ S13 Results Site (GitHub Pages)
 
 -----
 
-## S3: JDBC Baseline Subject
+## S3: JDBC Baseline Subjects
 
 **Input state**: S2 complete. OrmAdapter interface exists.
 
 **Work**:
 
-1. Create module `subjects/orm-jdbc/` with `build.gradle`
-1. Add to `settings.gradle`: `include 'subjects:orm-jdbc'`
-1. Implement `JdbcAdapter.java` — implements every OrmAdapter method with raw PreparedStatement
+1. Create modules `subjects/jdbc-raw/` and `subjects/jdbc-hikari/` with `build.gradle`
+1. Add to `settings.gradle`: `include 'subjects:jdbc-raw'`, `include 'subjects:jdbc-hikari'`
+1. Implement `JdbcRawAdapter.java` (DriverManager, no pool) and `JdbcHikariAdapter.java` (HikariCP) — both implement every OrmAdapter method with raw PreparedStatement
 1. Every query uses the exact SQL from QUERIES.md
 1. Result mapping: manual ResultSet → record via constructor
 1. Batch insert: `PreparedStatement.addBatch()` + `executeBatch()`
-1. Register via `META-INF/services/com.benchmark.OrmAdapter`
-1. Write a test that runs each adapter method against Testcontainers Postgres and verifies results
+1. Register both via `META-INF/services/com.benchmark.OrmAdapter`
+1. Write tests that run each adapter method against Testcontainers Postgres and verify results
 
-**Verify**: `./gradlew :subjects:orm-jdbc:test` passes. All 10 query types return correct results.
+**Verify**: `./gradlew :subjects:jdbc-raw:test :subjects:jdbc-hikari:test` passes. All 10 query types return correct results.
 
 **Important**: This is the performance floor. Every measurement from every other subject is compared against these numbers. The JDBC implementation must be clean, idiomatic, and use best practices (connection reuse, proper statement closing, etc.).
 
@@ -171,13 +173,13 @@ S13 Results Site (GitHub Pages)
 
 -----
 
-## S6: Hibernate Subject
+## S6: Hibernate Standalone Subject
 
 **Input state**: S5 complete. Full pipeline works for JDBC.
 
 **Work**:
 
-1. Create module `subjects/orm-hibernate/` with `build.gradle`
+1. Create module `subjects/hibernate-standalone/` with `build.gradle`
 1. Dependencies: hibernate-core 7.x, standalone (no Spring Boot) to isolate ORM overhead
 1. Create JPA entity classes: `UserEntity`, `ProductEntity`, `OrderEntity`, `OrderItemEntity`
 1. Implement `HibernateAdapter.java`:
@@ -194,7 +196,7 @@ S13 Results Site (GitHub Pages)
 1. Register via ServiceLoader
 1. Test against Testcontainers
 
-**Verify**: `./gradlew :subjects:orm-hibernate:test` passes. Run `./scripts/run-benchmarks.sh --quick` and see both JDBC and Hibernate in results.
+**Verify**: `./gradlew :subjects:hibernate-standalone:test` passes. Run `./scripts/run-benchmarks.sh --quick` and see JDBC + Hibernate in results.
 
 -----
 
@@ -215,28 +217,32 @@ S13 Results Site (GitHub Pages)
 
 -----
 
-## S8: jOOQ Subject
+## S8: Spring Subjects
 
 **Input state**: S7 complete.
 
 **Work**:
 
-1. Create module `subjects/orm-jooq/`
-1. jOOQ code generation from DDL files (DDLDatabase)
-1. Implement `JooqAdapter.java` — all queries via type-safe DSL where possible
-1. Record QueryMetadata accurately
+1. Create modules `subjects/spring-data-jpa/`, `subjects/spring-data-jdbc/`, `subjects/spring-jooq/`
+1. Spring Data JPA: repository over Hibernate, minimal Spring Boot app
+1. Spring Data JDBC: lightweight repository, no ORM
+1. Spring jOOQ: jOOQ DSL with Spring Boot auto-configuration, code generation from DDL
+1. All three use HikariCP (Spring Boot default)
+1. Record QueryMetadata accurately for each
 1. Test against Testcontainers
 
-**Verify**: `./gradlew :subjects:orm-jooq:test` passes. Results include all three subjects.
+**Verify**: `./gradlew :subjects:spring-data-jpa:test :subjects:spring-data-jdbc:test :subjects:spring-jooq:test` passes.
 
 -----
 
-## S9: Crossover Analysis
+## S9: Spring R2DBC + Crossover Analysis
 
-**Input state**: S8 complete. Three subjects with full data.
+**Input state**: S8 complete. Multiple subjects with full data.
 
 **Work**:
 
+1. Create module `subjects/spring-r2dbc/` — reactive Spring Data R2DBC with R2DBC pool
+1. Test against Testcontainers
 1. Create `scripts/crossover-analysis.py`:
 - ORM overhead = subject_latency - jdbc_latency
 - Negligible threshold = RTT where overhead < 5% of total
@@ -249,15 +255,15 @@ S13 Results Site (GitHub Pages)
 
 -----
 
-## S10: Remaining Subjects
+## S10: Remaining Framework Subjects
 
 **Input state**: S9 complete.
 
-### S10a: JDBI 3
+### S10a: Quarkus Subjects (`quarkus-panache`, `quarkus-panache-reactive`)
 
-### S10b: MyBatis 3
+### S10b: Micronaut Subjects (`micronaut-data-jdbc`, `micronaut-data-jpa`)
 
-### S10c: Micronaut Data
+### S10c: Helidon Subject (`helidon-jpa`)
 
 Each: create module, implement adapter, test, verify in results.
 
@@ -309,15 +315,15 @@ Each: create module, implement adapter, test, verify in results.
 ## Segment Dependencies
 
 ```
-S1 ──→ S2 ──→ S3 ──→ S4 ──→ S5  (core pipeline)
+S1 ──→ S2 ──→ S3 ──→ S4 ──→ S5  (core pipeline: jdbc-raw, jdbc-hikari)
                        ↓
-                      S6 ──→ S7  (hibernate + overhead)
+                      S6 ──→ S7  (hibernate-standalone + overhead)
                               ↓
-                             S8 ──→ S9  (jooq + crossover)
+                             S8 ──→ S9  (spring trio + r2dbc + crossover)
                                     ↓
-                                   S10 ──→ S11 ──→ S12
-                                                    ↓
-                                                   S13  (results site)
+                                   S10a ──→ S10b ──→ S10c ──→ S11 ──→ S12
+                                                                        ↓
+                                                                       S13  (results site)
 
 S13 can start as early as S5 — it only needs one round of data.
 ```
@@ -326,20 +332,22 @@ Each segment builds on the previous. No segment can be skipped. The pipeline is 
 
 ## Estimated Effort Per Segment
 
-|Segment|Effort   |Notes                                       |
-|-------|---------|--------------------------------------------|
-|S1     |2–3 hours|Schema + seeder is straightforward          |
-|S2     |1–2 hours|Interface design, mostly boilerplate        |
-|S3     |2–3 hours|JDBC is verbose but well-understood         |
-|S4     |3–4 hours|JMH configuration requires care             |
-|S5     |2–3 hours|Parsing + rendering scripts                 |
-|S6     |4–6 hours|Hibernate has the most configuration surface|
-|S7     |3–4 hours|Custom profiling instrumentation            |
-|S8     |3–4 hours|jOOQ code generation setup                  |
-|S9     |2–3 hours|Analysis scripts, math is simple            |
-|S10    |6–9 hours|Three subjects, each 2–3 hours              |
-|S11    |1–2 hours|Formatting polish                           |
-|S12    |2–3 hours|Docker + CI wiring                          |
-|S13    |6–8 hours|React site + deployment + data pipeline     |
+|Segment|Effort   |Notes                                           |
+|-------|---------|------------------------------------------------|
+|S1     |2–3 hours|Schema + seeder is straightforward              |
+|S2     |1–2 hours|Interface design, mostly boilerplate            |
+|S3     |3–4 hours|Two JDBC adapters (raw + HikariCP)              |
+|S4     |3–4 hours|JMH configuration requires care                 |
+|S5     |2–3 hours|Parsing + rendering scripts                     |
+|S6     |4–6 hours|Hibernate standalone, most config surface       |
+|S7     |3–4 hours|Custom profiling instrumentation                |
+|S8     |6–9 hours|Three Spring subjects + jOOQ code gen           |
+|S9     |3–4 hours|Spring R2DBC + crossover analysis scripts       |
+|S10a   |4–6 hours|Two Quarkus subjects (blocking + reactive)      |
+|S10b   |4–6 hours|Two Micronaut subjects (JDBC + JPA)             |
+|S10c   |2–3 hours|Helidon JPA subject                             |
+|S11    |1–2 hours|Formatting polish                               |
+|S12    |2–3 hours|Docker + CI wiring                              |
+|S13    |6–8 hours|React site + deployment + data pipeline         |
 
-**Total**: ~36–53 hours of focused Claude Code work.
+**Total**: ~45–67 hours of focused Claude Code work.

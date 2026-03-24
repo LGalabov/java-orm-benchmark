@@ -10,13 +10,13 @@ Rationale behind key choices. Reference this when implementing — it answers "w
 
 **Implication**: The benchmark harness calls OrmAdapter methods directly. There is no HTTP server, no request context, no dependency injection container (except where a framework requires one).
 
-## D2: Standalone Hibernate, not Spring Data JPA
+## D2: Standalone Hibernate as its own subject
 
-**Decision**: Use Hibernate 7 SessionFactory directly, not through Spring Boot / Spring Data JPA.
+**Decision**: `hibernate-standalone` uses Hibernate 7 SessionFactory directly, separate from framework subjects like `spring-data-jpa` or `quarkus-panache`.
 
-**Why**: Spring Data JPA adds its own abstraction layer (repositories, query derivation, transaction proxies). Measuring "Hibernate" through Spring Data JPA would conflate two frameworks' overhead.
+**Why**: Spring Data JPA, Panache, and Micronaut Data JPA all add their own abstraction layers. Having a standalone Hibernate subject isolates the cost of the ORM itself from the cost of the framework wrapping it.
 
-**Implication**: The Hibernate subject creates a SessionFactory from programmatic configuration. No Spring ApplicationContext.
+**Implication**: The `hibernate-standalone` subject creates a SessionFactory from programmatic configuration. No Spring ApplicationContext, no CDI container. Framework-specific Hibernate subjects (`spring-data-jpa`, `quarkus-panache`, etc.) are measured separately.
 
 ## D3: JDBC baseline uses best practices
 

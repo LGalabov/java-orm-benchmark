@@ -25,8 +25,9 @@ assertj = "3.27.3"
 # ORM versions (uncomment and set as frameworks are chosen)
 # hibernate = "6.6.x"
 # jooq = "3.19.x"
-# mybatis = "3.5.x"
-# jdbi = "3.47.x"
+# micronaut = "4.x"
+# quarkus = "3.x"
+# helidon = "4.x"
 # spring-boot = "3.4.x"
 
 [libraries]
