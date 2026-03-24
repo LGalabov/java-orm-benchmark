@@ -13,7 +13,7 @@ results/
 ├── rounds.json              ← index of all rounds
 ├── round-001/
 │   ├── meta.json            ← environment, JMH params, timestamp
-│   ├── latency.json         ← p50/p95/p99 per subject per query per db
+│   ├── latency.json         ← p50/p95/p99 per subject per query
 │   ├── throughput.json      ← ops/sec
 │   ├── overhead.json        ← stack depth, allocations, GC, cold start
 │   └── crossover.json       ← derived analysis

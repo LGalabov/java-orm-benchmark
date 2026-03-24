@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DB_TYPE="${1:?Usage: wait-for-db.sh <postgresql|mysql> <host> <port>}"
+DB_TYPE="${1:?Usage: wait-for-db.sh <postgresql> <host> <port>}"
 HOST="${2:-localhost}"
 PORT="${3:-5432}"
 MAX_RETRIES="${4:-30}"

@@ -100,7 +100,7 @@ PostgreSQL runs in Docker. Database-specific features (JSONB, FTS) are tracked i
 
 Each benchmark run produces three outputs:
 
-**Performance summary** — latency (p50, p95, p99) and throughput per subject per query type, across both databases.
+**Performance summary** — latency (p50, p95, p99) and throughput per subject per query type.
 
 **Overhead analysis** — stack depth, allocations per query, GC activity, and cold start time. The cost breakdown that frameworks do not publish.
 
@@ -140,7 +140,7 @@ java-orm-benchmark/
 ## Quick Start
 
 ```bash
-# Start databases
+# Start database
 docker compose -f docker/docker-compose.yml up -d
 
 # Build
@@ -149,8 +149,8 @@ docker compose -f docker/docker-compose.yml up -d
 # Run all benchmarks
 ./scripts/run-benchmarks.sh
 
-# Run a specific subject
-./scripts/run-benchmarks.sh --subject hibernate --db postgres
+# Run a quick smoke test
+./scripts/run-benchmarks.sh --quick
 
 # Quick mode (reduced iterations, useful for development)
 ./scripts/run-benchmarks.sh --quick
@@ -179,7 +179,7 @@ Each benchmark subject lives in its own directory. Adding a new framework means 
 1. Implement the `OrmAdapter` interface
 1. Register in `benchmark-harness/build.gradle`
 
-See `CONTRIBUTING.md` for details.
+See `docs/PLAN.md` for details.
 
 ## CI / Benchmarks
 

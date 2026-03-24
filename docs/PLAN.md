@@ -296,7 +296,7 @@ Each: create module, implement adapter, test, verify in results.
 1. Build `OverheadPanel` — horizontal bar charts for stack depth, allocations, cold start
 1. Build `FeatureMatrix` — the native/passthrough/blocked table
 1. Build round comparison: select two rounds, show delta percentages (green = improved, red = regressed)
-1. Build `FilterBar` — toggle pills for subjects, databases, percentile (p50/p95/p99). State encoded in URL hash for shareable links
+1. Build `FilterBar` — toggle pills for subjects and percentile (p50/p95/p99). State encoded in URL hash for shareable links
 1. Build `CrossoverPanel` — ORM overhead vs network RTT, batch inflection, complexity scaling
 1. Set up GitHub Pages deployment workflow (`.github/workflows/deploy-site.yml`)
 1. Retire the Gist to a one-line redirect
