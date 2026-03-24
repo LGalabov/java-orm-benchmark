@@ -67,7 +67,6 @@ S13 Results Site (GitHub Pages)
    ```java
    public record BenchmarkResult(
        String subject,
-       String database,
        String queryType,
        Map<String, Double> latencyPercentiles,  // p50, p95, p99
        double throughput,
@@ -152,7 +151,6 @@ S13 Results Site (GitHub Pages)
      "results": [
        {
          "subject": "jdbc",
-         "database": "postgres",
          "query": "pk_lookup",
          "latency_us": { "p50": 42, "p95": 67, "p99": 112 },
          "throughput_ops_s": 23500,
