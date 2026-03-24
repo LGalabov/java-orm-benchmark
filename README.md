@@ -71,6 +71,7 @@ Each framework is implemented using the approach its own documentation recommend
 |**Batch Insert**               |Bulk write (100, 1K, 10K rows) — batching strategy and round-trip cost |
 |**Batch Update**               |Bulk conditional update — dirty checking overhead vs. explicit SQL     |
 |**Projection**                 |Subset of columns to a DTO — framework overhead for non-entity results |
+|**Window Function**            |OVER/PARTITION BY — whether the framework can express analytical SQL   |
 |**JSONB Query** (Postgres)     |GIN-indexed JSONB containment — database-native feature utilization    |
 |**Full-Text Search** (Postgres)|tsvector/tsquery — whether the ORM supports or obstructs FTS           |
 
