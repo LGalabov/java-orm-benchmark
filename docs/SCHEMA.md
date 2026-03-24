@@ -206,11 +206,4 @@ public record OrderWithItems(
     int quantity,
     BigDecimal itemPrice
 ) {}
-
-public record UserWithRank(
-    Long id,
-    String name,
-    String department,
-    int deptRank
-) {}
 ```

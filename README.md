@@ -22,7 +22,7 @@ Framework authors publish performance characteristics, and those numbers are oft
 
 ### The database is a first-class variable
 
-Modern databases offer features — GIN indexes, JSONB, full-text search — that can meaningfully reduce the work an application layer needs to do. This project measures the ORM layer in combination with those features, not just against basic CRUD. The goal is to help developers understand what their chosen stack can do before reaching for additional infrastructure like caches or read replicas.
+Modern databases offer features — GIN indexes, JSONB, full-text search — that can meaningfully reduce the work an application layer needs to do. This project tracks which frameworks can express those features natively and which force raw SQL workarounds (see the Feature Matrix). The goal is to help developers understand what their chosen stack can do before reaching for additional infrastructure like caches or read replicas.
 
 ### The hidden costs are made visible
 
@@ -38,7 +38,7 @@ HTTP servers, JSON serialization, request routing, and middleware all add noise 
 
 ### The complexity spectrum is covered
 
-Simple CRUD is not a representative workload. Aggregations, multi-table joins, CTEs, batch writes, and projection queries behave differently across frameworks and databases. A framework that performs well on a primary key lookup may degrade significantly on a reporting query. We cover the full spectrum and show where each framework's strengths and weaknesses actually appear.
+Simple CRUD is not a representative workload. N+1 queries, deep pagination, batch writes, and projection queries behave differently across frameworks and databases. A framework that performs well on a primary key lookup may degrade significantly on a reporting query or deep pagination. We cover the full spectrum and show where each framework's strengths and weaknesses actually appear.
 
 ## Subjects
 
@@ -61,19 +61,32 @@ Each framework is implemented using the approach its own documentation recommend
 
 ## Query Types
 
-|Query                          |What It Tests                                                          |
-|-------------------------------|-----------------------------------------------------------------------|
-|**PK Lookup**                  |Single-row fetch by primary key — the baseline operation               |
-|**Filter + Sort**              |WHERE clause with ORDER BY — index utilization and plan choice         |
-|**Multi-table Join**           |3-table join with projection — how the framework handles result mapping|
-|**Aggregation**                |GROUP BY with HAVING — pushed-down vs. application-side computation    |
-|**CTE**                        |WITH clause — support for modern SQL features beyond basic CRUD        |
-|**Batch Insert**               |Bulk write (100, 1K, 10K rows) — batching strategy and round-trip cost |
-|**Batch Update**               |Bulk conditional update — dirty checking overhead vs. explicit SQL     |
-|**Projection**                 |Subset of columns to a DTO — framework overhead for non-entity results |
-|**Window Function**            |OVER/PARTITION BY — whether the framework can express analytical SQL   |
-|**JSONB Query** (Postgres)     |GIN-indexed JSONB containment — database-native feature utilization    |
-|**Full-Text Search** (Postgres)|tsvector/tsquery — whether the ORM supports or obstructs FTS           |
+|Query                       |What It Tests                                                               |
+|----------------------------|----------------------------------------------------------------------------|
+|**PK Lookup**               |Single-row fetch by primary key — the universal baseline                    |
+|**Filter + Sort + Paginate**|WHERE + ORDER BY + LIMIT/OFFSET — the most common production read           |
+|**Multi-table Join**        |3-table join to flat DTO — result mapping overhead for non-entity types     |
+|**N+1 vs Eager Load**       |Load parents then access children — naive (N+1) vs optimized (JOIN FETCH)   |
+|**Aggregation**             |GROUP BY + HAVING + SUM/COUNT — pushed-down vs application-side computation |
+|**Projection**              |Subset of columns to DTO — framework overhead for partial fetches           |
+|**Single Insert**           |INSERT one row, return generated ID — write baseline, ID generation strategy|
+|**Batch Insert**            |Bulk write at 100, 1K, 10K rows — batching strategy and round-trip cost     |
+|**Batch Update**            |Conditional UPDATE on multiple rows — dirty checking vs direct SQL          |
+|**Pagination at Depth**     |OFFSET at page 1 vs 100 vs 1000 — degradation pattern and keyset support    |
+
+### Feature Matrix (Capability Only)
+
+These are not benchmarked for latency — they test whether the framework can express the feature natively, requires raw SQL passthrough, or is blocked entirely.
+
+|Feature                    |What We Check                                                      |
+|---------------------------|-------------------------------------------------------------------|
+|CTE (WITH clause)          |Can the framework express CTEs in its DSL/API?                     |
+|Window functions (OVER)    |Can it express PARTITION BY / ROW_NUMBER natively?                 |
+|JSONB containment (@>)     |Can it express Postgres JSONB operators?                           |
+|Full-text search (tsvector)|Can it express FTS without raw SQL?                                |
+|RETURNING clause           |Does INSERT/UPDATE return generated values in one round-trip?      |
+|Batch insert strategy      |Does it use multi-row VALUES, addBatch(), or individual statements?|
+|Keyset pagination          |Does the framework support cursor-based pagination natively?       |
 
 ## Databases
 
@@ -82,7 +95,7 @@ Each framework is implemented using the approach its own documentation recommend
 |PostgreSQL|17     |Advanced feature set (JSONB, FTS, CTEs, window functions)  |
 |MySQL     |9.x    |Widespread adoption, different optimization characteristics|
 
-Both databases run in Docker with identical hardware allocation. Schema and seed data are shared; database-specific queries (JSONB, FTS) run only where supported.
+Both databases run in Docker with identical hardware allocation. Schema and seed data are shared. Database-specific features (JSONB, FTS) are tracked in the Feature Matrix but not benchmarked for latency — their performance is database-side, not framework-side.
 
 ## What the Results Show
 

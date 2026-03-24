@@ -19,7 +19,7 @@ The PDF README promises three outputs per run. This document specifies exactly w
 |Latency p99|μs   |JMH SampleTime|subject × query × db|
 |Throughput |ops/s|JMH Throughput|subject × query × db|
 
-**Queries covered**: All 11 from QUERIES.md (Q1–Q11). JSONB and FTS only for Postgres.
+**Queries covered**: All 10 from QUERIES.md (Q1–Q10). Database-specific features (CTE, JSONB, FTS, window functions) are tracked in the Feature Matrix but not benchmarked for latency.
 
 **JSON output**: `results/round-NNN/latency.json` and `results/round-NNN/throughput.json`.
 
@@ -132,7 +132,7 @@ The PDF README promises three outputs per run. This document specifies exactly w
 
 #### 3c: Query Complexity Scaling
 
-**Tiers**: PK Lookup → Filter+Sort → 3-Table Join → Aggregation → CTE.
+**Tiers**: PK Lookup → Filter+Sort+Paginate → 3-Table Join → Aggregation.
 
 **Output**:
 
@@ -141,10 +141,9 @@ The PDF README promises three outputs per run. This document specifies exactly w
   "subject": "hibernate",
   "complexity_scaling": {
     "pk_lookup_overhead_us": 82,
-    "filter_sort_overhead_us": 108,
+    "filter_sort_paginate_overhead_us": 108,
     "join_3table_overhead_us": 190,
     "aggregation_overhead_us": 195,
-    "cte_overhead_us": 182,
     "pattern": "Scales with result mapping complexity, not query complexity"
   }
 }

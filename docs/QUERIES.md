@@ -10,35 +10,45 @@ Each subject implements this interface. The harness calls these methods; the sub
 public interface OrmAdapter extends AutoCloseable {
 
     // --- Lifecycle ---
-    void setup(DataSource ds);     // called once before benchmarks
-    void teardown();               // called once after benchmarks
+    void setup(DataSource ds);
+    void teardown();
 
     // --- Read: Simple ---
     User findUserById(long id);
-    List<User> findUsersByDepartment(String department, int limit);
+    List<User> findUsersByDepartment(String department, String sortBy, int limit, int offset);
 
     // --- Read: Join ---
     List<OrderWithItems> findOrdersWithItems(long userId);
 
+    // --- Read: N+1 vs Eager ---
+    List<Order> findOrdersNaive(String department);       // N+1: loads orders, then accesses user per order
+    List<Order> findOrdersOptimized(String department);   // Eager: loads orders + users in one query
+
     // --- Read: Aggregation ---
     List<UserSpendSummary> findTopSpenders(String department, int minOrders);
-
-    // --- Read: CTE ---
-    List<UserSpendSummary> findTopSpendersCte(String department, int minOrders);
 
     // --- Read: Projection ---
     List<UserSummary> findUserSummaries(String department);
 
-    // --- Read: Window Function ---
-    List<UserWithRank> findUsersRankedByDepartment(List<String> departments);
+    // --- Read: Pagination at Depth ---
+    List<User> findUsersPaginated(int pageSize, int pageNumber);  // OFFSET-based
+    List<User> findUsersAfter(long lastSeenId, int pageSize);     // Keyset-based (if supported)
 
-    // --- Read: Postgres-specific ---
-    List<Product> findProductsByJsonAttribute(String key, String value);  // JSONB
-    List<Product> searchProducts(String query);                          // FTS
+    // --- Write: Single ---
+    long insertUser(User user);  // returns generated ID
 
     // --- Write: Batch ---
     void batchInsertUsers(List<User> users);
     void batchUpdateOrderStatus(String fromStatus, String toStatus);
+
+    // --- Feature Matrix (not timed, capability check only) ---
+    default boolean supportsCte() { return false; }
+    default boolean supportsWindowFunctions() { return false; }
+    default boolean supportsJsonbContainment() { return false; }
+    default boolean supportsFullTextSearch() { return false; }
+    default boolean supportsReturningClause() { return false; }
+    default boolean supportsKeysetPagination() { return false; }
+    default String batchInsertStrategy() { return "unknown"; }  // "multi_row", "add_batch", "individual"
 }
 ```
 
@@ -64,9 +74,9 @@ WHERE id = ?
 
 -----
 
-### Q2: Filter + Sort
+### Q2: Filter + Sort + Paginate
 
-**Intent**: Indexed WHERE clause with ORDER BY. Tests whether the framework generates a query that uses the index or forces a scan.
+**Intent**: Indexed WHERE clause with ORDER BY and LIMIT/OFFSET. The most common production read pattern. Tests whether the framework generates a query that uses the index or forces a scan, and how it handles pagination parameters.
 
 **SQL**:
 
@@ -75,12 +85,12 @@ SELECT id, name, email, department, created_at
 FROM users
 WHERE department = ?
 ORDER BY created_at DESC
-LIMIT ?
+LIMIT ? OFFSET ?
 ```
 
-**Method**: `findUsersByDepartment(String department, int limit)`
+**Method**: `findUsersByDepartment(String department, String sortBy, int limit, int offset)`
 
-**Parameters**: Random department from the 8 seeded departments. Limit = 20.
+**Parameters**: Random department from the 8 seeded departments. limit = 20, offset = 0.
 
 **Expected result**: Up to 20 User records, sorted by created_at descending.
 
@@ -113,7 +123,43 @@ ORDER BY o.placed_at DESC
 
 -----
 
-### Q4: Aggregation
+### Q4: N+1 vs Eager Load
+
+**Intent**: The #1 ORM performance problem. Benchmarks both the naive case (N+1 queries) and the optimized case (JOIN FETCH / eager load). Measures the cost of getting it wrong and the framework's ability to fix it.
+
+**Naive (N+1):**
+
+```sql
+-- Query 1: fetch orders
+SELECT id, user_id, total, status, placed_at FROM orders WHERE status = ? LIMIT 100
+-- Then for EACH order, a separate query:
+SELECT id, name, email, department, created_at FROM users WHERE id = ?
+-- Total: 101 queries
+```
+
+**Optimized (Eager/JOIN FETCH):**
+
+```sql
+SELECT o.id, o.user_id, o.total, o.status, o.placed_at,
+       u.id, u.name, u.email, u.department, u.created_at
+FROM orders o
+JOIN users u ON o.user_id = u.id
+WHERE o.status = ?
+LIMIT 100
+-- Total: 1 query
+```
+
+**Methods**: `findOrdersNaive(String department)` and `findOrdersOptimized(String department)`
+
+**Parameters**: status = 'SHIPPED' (the most common status at 30%).
+
+**Expected result**: Both methods return the same data. The benchmark shows the cost of N+1 vs the cost of a single JOIN. For raw JDBC, both are implemented manually. For Hibernate, naive = lazy loading default, optimized = JOIN FETCH or entity graph. For Micronaut Data JDBC, there's no lazy loading so both should be equivalent.
+
+**Why this matters**: This is the single most impactful ORM performance difference in real applications. A developer choosing between frameworks needs to know: how bad is the default? How easy is the fix?
+
+-----
+
+### Q5: Aggregation
 
 **Intent**: GROUP BY with HAVING, aggregate functions, and a join. Tests whether the framework pushes computation to the database or pulls rows and aggregates in Java.
 
@@ -140,40 +186,6 @@ ORDER BY total_spend DESC
 
 -----
 
-### Q5: CTE
-
-**Intent**: Same business logic as Q4, but expressed as a CTE. Tests whether the framework can express WITH clauses natively or forces a workaround.
-
-**SQL**:
-
-```sql
-WITH user_orders AS (
-    SELECT user_id,
-           COUNT(*) AS order_count,
-           SUM(total) AS total_spend,
-           MAX(placed_at) AS last_order
-    FROM orders
-    GROUP BY user_id
-)
-SELECT u.id, u.name, u.email,
-       uo.order_count, uo.total_spend, uo.last_order
-FROM users u
-JOIN user_orders uo ON u.id = uo.user_id
-WHERE u.department = ?
-  AND uo.order_count > ?
-ORDER BY uo.total_spend DESC
-```
-
-**Method**: `findTopSpendersCte(String department, int minOrders)`
-
-**Parameters**: Same as Q4.
-
-**Expected result**: Same as Q4 (validates that CTE produces identical results).
-
-**Note**: Frameworks that cannot express CTEs natively should use raw SQL passthrough. The benchmark records whether native or passthrough was used.
-
------
-
 ### Q6: Projection
 
 **Intent**: Fetching a subset of columns to a DTO. Tests whether the framework can avoid fetching and mapping unused columns.
@@ -194,51 +206,33 @@ WHERE department = ?
 
 -----
 
-### Q7: JSONB Query (Postgres only)
+### Q7: Single Insert
 
-**Intent**: GIN-indexed JSONB containment query. Tests whether the framework can express database-native JSON operators or forces raw SQL.
-
-**SQL**:
-
-```sql
-SELECT id, name, category, price, attributes::text
-FROM products
-WHERE attributes @> ?::jsonb
-```
-
-**Method**: `findProductsByJsonAttribute(String key, String value)`
-
-**Parameters**: Random key-value pair from the seeded attribute pool. The method constructs the JSONB literal (`{"color": "red"}`).
-
-**Expected result**: List of Product records matching the containment query.
-
-**Frameworks that can't express `@>`**: Use raw SQL. The benchmark records this.
-
------
-
-### Q8: Full-Text Search (Postgres only)
-
-**Intent**: tsvector/tsquery search using the GIN index. Tests whether the framework supports FTS or obstructs it.
+**Intent**: INSERT one row and return the generated ID. The most common write operation. Tests ID generation strategy, RETURNING clause usage, and unnecessary round-trips.
 
 **SQL**:
 
 ```sql
-SELECT id, name, category, price, attributes::text
-FROM products
-WHERE search_doc @@ plainto_tsquery('english', ?)
-ORDER BY ts_rank(search_doc, plainto_tsquery('english', ?)) DESC
-LIMIT 20
+-- Postgres
+INSERT INTO users (name, email, department, created_at) VALUES (?, ?, ?, ?)
+RETURNING id
+
+-- MySQL
+INSERT INTO users (name, email, department, created_at) VALUES (?, ?, ?, ?)
+-- followed by SELECT LAST_INSERT_ID()
 ```
 
-**Method**: `searchProducts(String query)`
+**Method**: `insertUser(User user)` — returns generated `long id`.
 
-**Parameters**: Random word from the product name word list.
+**Parameters**: Pre-generated User record (id is null — database assigns).
 
-**Expected result**: Up to 20 Product records ranked by relevance.
+**Cleanup**: Delete inserted row after each invocation.
+
+**What we measure**: Round-trip cost for a single write. Whether the framework uses RETURNING or a separate SELECT. Whether it opens a transaction unnecessarily. The write-path baseline — batch insert numbers are meaningless without this.
 
 -----
 
-### Q9: Batch Insert
+### Q8: Batch Insert
 
 **Intent**: Bulk write at three scales (100, 1K, 10K rows). Tests batching strategy — does the framework use multi-row INSERT, JDBC batching, or individual statements?
 
@@ -258,7 +252,7 @@ VALUES (?, ?, ?, ?)
 
 -----
 
-### Q10: Batch Update
+### Q9: Batch Update
 
 **Intent**: Bulk conditional update. Tests dirty checking overhead (Hibernate) vs. direct UPDATE.
 
@@ -278,37 +272,73 @@ WHERE status = ?
 
 -----
 
-### Q11: Window Function
+### Q10: Pagination at Depth
 
-**Intent**: Ranked results using a window function. Tests whether the framework can express OVER/PARTITION BY natively or forces raw SQL.
+**Intent**: OFFSET pagination at increasing depth, showing degradation. Keyset pagination comparison where supported.
 
-**SQL**:
+**OFFSET-based:**
 
 ```sql
-SELECT id, name, department,
-       ROW_NUMBER() OVER (PARTITION BY department ORDER BY created_at DESC) AS dept_rank
+SELECT id, name, email, department, created_at
 FROM users
-WHERE department IN (?, ?, ?)
+ORDER BY id
+LIMIT 20 OFFSET ?
+-- Run at offset 0 (page 1), 1980 (page 100), 19980 (page 1000)
 ```
 
-**Method**: `findUsersRankedByDepartment(List<String> departments)`
+**Keyset-based:**
 
-**Parameters**: Three random departments from the seeded set.
+```sql
+SELECT id, name, email, department, created_at
+FROM users
+WHERE id > ?
+ORDER BY id
+LIMIT 20
+-- lastSeenId from previous page
+```
 
-**Expected result**: List of UserWithRank records. Each user has their rank within their department.
+**Methods**: `findUsersPaginated(int pageSize, int pageNumber)` and `findUsersAfter(long lastSeenId, int pageSize)`
 
-**Projection record**:
+**Parameters**: pageSize = 20. Benchmarked at page 1, 100, 1000.
+
+**What we measure**: How OFFSET pagination degrades at depth. Whether keyset pagination avoids that degradation. Whether the framework supports keyset natively or requires manual SQL. At page 1000 with 10K users, OFFSET=19980 forces the DB to scan and skip rows — this is where the difference becomes dramatic.
+
+## Feature Matrix (Capability Check)
+
+After all benchmark queries, the harness runs a capability check for each subject. These are **not timed** — they test whether the framework can express the feature natively, requires raw SQL passthrough, or is blocked entirely.
 
 ```java
-public record UserWithRank(
-    Long id,
-    String name,
-    String department,
-    int deptRank
-) {}
+// Called once per subject, not timed
+FeatureMatrix matrix = new FeatureMatrix();
+matrix.cte = adapter.supportsCte();
+matrix.windowFunctions = adapter.supportsWindowFunctions();
+matrix.jsonbContainment = adapter.supportsJsonbContainment();
+matrix.fullTextSearch = adapter.supportsFullTextSearch();
+matrix.returningClause = adapter.supportsReturningClause();
+matrix.keysetPagination = adapter.supportsKeysetPagination();
+matrix.batchStrategy = adapter.batchInsertStrategy();
 ```
 
-**Note**: This query directly populates the "Window functions" row in the Database Feature Utilization matrix.
+Each subject's adapter returns honest answers. The harness does NOT infer these — the implementer declares them.
+
+**Output in results JSON**:
+
+```json
+{
+  "subject": "spring-data-jpa",
+  "feature_matrix": {
+    "cte": "passthrough",
+    "window_functions": "passthrough",
+    "jsonb_containment": "passthrough",
+    "full_text_search": "passthrough",
+    "returning_clause": "blocked",
+    "keyset_pagination": "native",
+    "batch_insert_strategy": "framework_managed"
+  }
+}
+```
+
+Values: `native` (DSL/API support), `passthrough` (raw SQL required), `blocked` (framework interferes), `not_applicable`.
 
 ## Parameter Randomization
 
@@ -330,4 +360,4 @@ For each query, the harness records not just the timing but also how the framewo
 |`result_mapping`  |`automatic`, `manual_mapper`, `raw_resultset`                      |
 |`batch_strategy`  |`jdbc_batch`, `multi_row_insert`, `individual`, `framework_managed`|
 
-This metadata feeds into the Database Feature Utilization section of the results gist.
+This metadata feeds into the Feature Matrix section of the results.

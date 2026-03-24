@@ -128,7 +128,7 @@ S13 Results Site (GitHub Pages)
        // ...
    }
    ```
-1. One `@Benchmark` method per query type (Q1–Q10)
+1. One `@Benchmark` method per query type (Q1–Q10), plus feature matrix capability check
 1. `@Setup(Level.Trial)`: start DB containers (or connect to running Docker), run seeder, instantiate adapter
 1. `@TearDown(Level.Trial)`: close adapter, cleanup
 1. Parameter randomization: deterministic PRNG per iteration
@@ -184,14 +184,15 @@ S13 Results Site (GitHub Pages)
 1. Create JPA entity classes: `UserEntity`, `ProductEntity`, `OrderEntity`, `OrderItemEntity`
 1. Implement `HibernateAdapter.java`:
 - Q1 (PK Lookup): `session.find(UserEntity.class, id)` → map to User record
-- Q2 (Filter + Sort): HQL or Criteria API
+- Q2 (Filter + Sort + Paginate): HQL or Criteria API with setFirstResult/setMaxResults
 - Q3 (Join): HQL with explicit join + projection
-- Q4 (Aggregation): HQL with GROUP BY
-- Q5 (CTE): native query (or HQL if Hibernate 7 supports CTEs)
+- Q4 (N+1 vs Eager): lazy loading default vs JOIN FETCH / entity graph
+- Q5 (Aggregation): HQL with GROUP BY
 - Q6 (Projection): HQL with SELECT new or Tuple query
-- Q7/Q8 (JSONB/FTS): native query
-- Q9 (Batch insert): session.persist() with periodic flush/clear
-- Q10 (Batch update): HQL UPDATE or native SQL
+- Q7 (Single insert): session.persist() + return generated id
+- Q8 (Batch insert): session.persist() with periodic flush/clear
+- Q9 (Batch update): HQL UPDATE or native SQL
+- Q10 (Pagination at Depth): setFirstResult/setMaxResults + keyset via HQL
 1. Record QueryMetadata for each method
 1. Register via ServiceLoader
 1. Test against Testcontainers

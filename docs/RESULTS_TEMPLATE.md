@@ -9,8 +9,8 @@
 |                            |jdbc-raw|jdbc-hikari|hibernate|spring-jpa|spring-jdbc|spring-jooq|spring-r2dbc|quarkus|quarkus-rx|mn-jdbc|mn-jpa|helidon|
 |----------------------------|:------:|:---------:|:-------:|:--------:|:---------:|:---------:|:----------:|:-----:|:--------:|:-----:|:----:|:-----:|
 |**PK Lookup** (μs p50)      |`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|
-|**3-Table Join** (μs p50)   |`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|
-|**CTE** (μs p50)            |`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|
+|**N+1 Naive** (μs p50)      |`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|
+|**N+1 Optimized** (μs p50)  |`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|
 |**Batch 1K Insert** (ms p50)|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|
 |**Stack Depth** (frames)    |`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|
 |**Alloc/Query** (bytes)     |`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|
@@ -24,24 +24,27 @@
 
 ### Read Queries
 
-|Query Type            |jdbc-raw|jdbc-hikari|hibernate|spring-jpa|spring-jdbc|spring-jooq|spring-r2dbc|quarkus|quarkus-rx|mn-jdbc|mn-jpa|helidon|
-|----------------------|-------:|----------:|--------:|---------:|----------:|----------:|-----------:|------:|---------:|------:|-----:|------:|
-|PK Lookup — p50       |        |           |         |          |           |           |            |       |          |       |      |       |
-|PK Lookup — p95       |        |           |         |          |           |           |            |       |          |       |      |       |
-|PK Lookup — p99       |        |           |         |          |           |           |            |       |          |       |      |       |
-|Filter + Sort — p50   |        |           |         |          |           |           |            |       |          |       |      |       |
-|3-Table Join — p50    |        |           |         |          |           |           |            |       |          |       |      |       |
-|Aggregation — p50     |        |           |         |          |           |           |            |       |          |       |      |       |
-|Projection — p50      |        |           |         |          |           |           |            |       |          |       |      |       |
-|CTE — p50             |        |           |         |          |           |           |            |       |          |       |      |       |
-|Window Function — p50 |        |           |         |          |           |           |            |       |          |       |      |       |
-|JSONB Query — p50     |        |           |         |          |           |           |            |       |          |       |      |       |
-|Full-Text Search — p50|        |           |         |          |           |           |            |       |          |       |      |       |
+|Query Type                    |jdbc-raw|jdbc-hikari|hibernate|spring-jpa|spring-jdbc|spring-jooq|spring-r2dbc|quarkus|quarkus-rx|mn-jdbc|mn-jpa|helidon|
+|------------------------------|-------:|----------:|--------:|---------:|----------:|----------:|-----------:|------:|---------:|------:|-----:|------:|
+|PK Lookup — p50               |        |           |         |          |           |           |            |       |          |       |      |       |
+|PK Lookup — p95               |        |           |         |          |           |           |            |       |          |       |      |       |
+|PK Lookup — p99               |        |           |         |          |           |           |            |       |          |       |      |       |
+|Filter + Sort + Paginate — p50|        |           |         |          |           |           |            |       |          |       |      |       |
+|Filter + Sort + Paginate — p95|        |           |         |          |           |           |            |       |          |       |      |       |
+|Multi-table Join — p50        |        |           |         |          |           |           |            |       |          |       |      |       |
+|Multi-table Join — p95        |        |           |         |          |           |           |            |       |          |       |      |       |
+|N+1 Naive (101 queries) — p50 |        |           |         |          |           |           |            |       |          |       |      |       |
+|N+1 Optimized (1 query) — p50 |        |           |         |          |           |           |            |       |          |       |      |       |
+|Aggregation — p50             |        |           |         |          |           |           |            |       |          |       |      |       |
+|Projection — p50              |        |           |         |          |           |           |            |       |          |       |      |       |
+|Pagination (page 1) — p50     |        |           |         |          |           |           |            |       |          |       |      |       |
+|Pagination (page 1000) — p50  |        |           |         |          |           |           |            |       |          |       |      |       |
 
 ### Write Queries
 
 |Query Type              |jdbc-raw|jdbc-hikari|hibernate|spring-jpa|spring-jdbc|spring-jooq|spring-r2dbc|quarkus|quarkus-rx|mn-jdbc|mn-jpa|helidon|
 |------------------------|-------:|----------:|--------:|---------:|----------:|----------:|-----------:|------:|---------:|------:|-----:|------:|
+|Single Insert — p50     |        |           |         |          |           |           |            |       |          |       |      |       |
 |Batch Insert (100) — p50|        |           |         |          |           |           |            |       |          |       |      |       |
 |Batch Insert (1K) — p50 |        |           |         |          |           |           |            |       |          |       |      |       |
 |Batch Insert (10K) — p50|        |           |         |          |           |           |            |       |          |       |      |       |
@@ -51,7 +54,7 @@
 
 ## 2 · Latency — MySQL 9.x
 
-*Same structure, JSONB and FTS rows omitted.*
+*Same structure as above.*
 
 -----
 
@@ -129,27 +132,28 @@
 
 ### Query Complexity Scaling
 
-|Subject              |PK Lookup|3-Table Join|CTE|Pattern|
-|---------------------|--------:|-----------:|--:|-------|
-|hibernate-standalone |         |            |   |       |
-|spring-data-jpa      |         |            |   |       |
-|spring-jooq          |         |            |   |       |
-|quarkus-panache      |         |            |   |       |
-|micronaut-data-jdbc  |         |            |   |       |
-|helidon-jpa          |         |            |   |       |
+|Subject              |PK Lookup|3-Table Join|Aggregation|Pattern|
+|---------------------|--------:|-----------:|----------:|-------|
+|hibernate-standalone |         |            |           |       |
+|spring-data-jpa      |         |            |           |       |
+|spring-jooq          |         |            |           |       |
+|quarkus-panache      |         |            |           |       |
+|micronaut-data-jdbc  |         |            |           |       |
+|helidon-jpa          |         |            |           |       |
 
 -----
 
-## 5 · Database Feature Utilization
+## 5 · Feature Matrix
 
 |Feature          |hibernate|spring-jpa|spring-jdbc|spring-jooq|spring-r2dbc|quarkus|quarkus-rx|mn-jdbc|mn-jpa|helidon|
 |-----------------|---------|----------|-----------|-----------|------------|-------|----------|-------|------|-------|
+|CTE (WITH)       |         |          |           |           |            |       |          |       |      |       |
+|Window functions |         |          |           |           |            |       |          |       |      |       |
 |JSONB containment|         |          |           |           |            |       |          |       |      |       |
 |Full-text search |         |          |           |           |            |       |          |       |      |       |
-|CTE              |         |          |           |           |            |       |          |       |      |       |
-|Window functions |         |          |           |           |            |       |          |       |      |       |
-|Batch insert     |         |          |           |           |            |       |          |       |      |       |
 |RETURNING clause |         |          |           |           |            |       |          |       |      |       |
+|Keyset pagination|         |          |           |           |            |       |          |       |      |       |
+|Batch strategy   |         |          |           |           |            |       |          |       |      |       |
 
 *Values: **native**, **passthrough**, **blocked**, **N/A**.*
 
@@ -175,7 +179,7 @@
 
 **Crossover**: If your DB has 2ms RTT, a 50μs framework overhead is noise. If local, that 50μs is half your query time.
 
-**Feature utilization**: If you use Postgres for JSONB/FTS, a framework that can't express those natively costs more than latency alone suggests.
+**Feature matrix**: If you use Postgres for JSONB/FTS, a framework that can't express those natively costs more than latency alone suggests.
 
 -----
 
