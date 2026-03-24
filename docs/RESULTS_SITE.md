@@ -31,7 +31,6 @@ results/
       "timestamp": "2026-04-15T14:30:00Z",
       "label": "Round 1 — JDBC + Hibernate",
       "subjects": ["jdbc", "hibernate"],
-      "databases": ["postgres"],
       "java_version": "25",
       "notes": "Initial baseline."
     }
@@ -73,13 +72,13 @@ GitHub Actions on push to main (when site/ or results/ change). Build Vite, copy
 **Core interactions**:
 
 1. Round Selector — dropdown, default "Latest", compare toggle for side-by-side
-1. Filter Bar — toggle pills for subjects, databases, percentile (p50/p95/p99). State in URL hash.
+1. Filter Bar — toggle pills for subjects, percentile (p50/p95/p99). State in URL hash.
 1. Latency Table — color-coded cells (green ≤2× baseline, yellow 2–5×, red >5×), optional bar overlay
 1. Overhead Panel — horizontal bar charts for stack depth, allocations, cold start
 1. Crossover Panel — ORM overhead vs RTT, batch inflection, complexity scaling
 1. Feature Matrix — native/passthrough/blocked color-coded table
 1. Compare Rounds — two rounds side by side with delta columns
 
-**URL structure**: `/#/round/round-002?subjects=jdbc,hibernate&db=postgres&percentile=p99`
+**URL structure**: `/#/round/round-002?subjects=jdbc,hibernate&percentile=p99`
 
 **Data growth**: ~20 KB per round. GitHub Pages 1 GB limit = decades of headroom.

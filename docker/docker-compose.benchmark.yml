@@ -4,11 +4,6 @@ services:
       file: docker-compose.yml
       service: postgres
 
-  mysql:
-    extends:
-      file: docker-compose.yml
-      service: mysql
-
   benchmark-runner:
     build:
       context: ..
@@ -16,13 +11,9 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      mysql:
-        condition: service_healthy
     environment:
       DB_HOST_PG: postgres
       DB_PORT_PG: 5432
-      DB_HOST_MY: mysql
-      DB_PORT_MY: 3306
       DB_NAME: ormbench
       DB_USER: bench
       DB_PASS: bench

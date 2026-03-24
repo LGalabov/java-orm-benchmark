@@ -38,11 +38,11 @@ Rationale behind key choices. Reference this when implementing — it answers "w
 
 **Why**: Nested object assembly is framework-specific. Flat projection keeps the comparison fair.
 
-## D6: CTE as separate query from aggregation
+## D6: CTE tracked as capability, not benchmarked
 
-**Decision**: Q4 (aggregation) and Q5 (CTE) express the same business logic differently. Both are benchmarked.
+**Decision**: CTE (WITH clause) support is captured in the Feature Matrix as a capability check (native / passthrough / blocked) but is not a timed benchmark.
 
-**Why**: Directly measures whether CTE support adds or removes overhead vs. plain aggregation.
+**Why**: A CTE that expresses the same logic as a plain aggregation produces an identical query plan in modern Postgres. Benchmarking both would measure the database optimizer, not the framework — which contradicts D1's principle of isolating persistence-layer overhead. The Feature Matrix still records whether each framework can express a CTE natively.
 
 ## D7: Query metadata captured alongside timing
 
@@ -55,12 +55,6 @@ Rationale behind key choices. Reference this when implementing — it answers "w
 **Decision**: Use both @BenchmarkMode({Mode.SampleTime, Mode.Throughput}).
 
 **Why**: SampleTime gives p50/p95/p99. Throughput gives ops/sec. Both needed.
-
-## D9: Postgres-specific queries run on Postgres only
-
-**Decision**: JSONB and FTS queries skip MySQL.
-
-**Why**: Comparing Postgres JSONB @> to MySQL JSON_CONTAINS measures database differences, not framework differences.
 
 ## D10: GPL-3.0 license
 
@@ -79,3 +73,15 @@ Rationale behind key choices. Reference this when implementing — it answers "w
 **Decision**: Tests use Testcontainers. Benchmarks use long-lived Docker Compose databases.
 
 **Why**: Testcontainers adds startup overhead that would pollute benchmark numbers.
+
+## D13: JMH warmup tuned for database benchmarks
+
+**Decision**: Use `@Warmup(iterations = 5, time = 2)` and run `ANALYZE` on all tables after seeding.
+
+**Why**: Database benchmarks differ from CPU microbenchmarks. The first iterations after setup may be significantly slower due to cold Postgres shared buffers, unpopulated query plan caches, and JIT compilation warmup in both the JVM and the database. Five warmup iterations of 2 seconds each allow both the JVM (JIT, class loading) and Postgres (buffer pool, plan cache) to stabilize. The post-seeding ANALYZE ensures the planner has accurate statistics from the start, preventing the optimizer from choosing sequential scans on indexed columns during early iterations. If p99 is >5× p50 in warmup-free runs but <2× with this warmup count, the configuration is sufficient.
+
+## D14: Postgres-only for v1
+
+**Decision**: v1 benchmarks run on PostgreSQL 17 only. MySQL is deferred.
+
+**Why**: The interesting persistence-layer differences (framework overhead, result mapping cost, batching strategy, N+1 penalty) are nearly identical regardless of which database sits underneath — the framework does the same work either way. Adding MySQL doubles the test matrix and implementation effort for results that would almost certainly show the same relative ordering between frameworks. Postgres-specific features (JSONB, full-text search, RETURNING clause) also make it the more interesting test target. MySQL support is a natural v2 addition once v1 ships.

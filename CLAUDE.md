@@ -24,7 +24,7 @@
 
 - `common/` — shared module (domain model, config, seeding, result models)
 - `benchmark-harness/` — central JMH benchmark runner with adapter pattern
-- `docker/` — Docker Compose for PostgreSQL + MySQL, plus benchmark runner
+- `docker/` — Docker Compose for PostgreSQL, plus benchmark runner
 - `scripts/` — shell scripts for running benchmarks, uploading results, etc.
 - `.github/workflows/` — CI (push/PR) and Benchmark (manual dispatch)
 - `docs/` — project specification, implementation plan, design decisions

@@ -16,11 +16,9 @@
 |**Alloc/Query** (bytes)     |`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|
 |**Cold Start** (ms)         |`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|`—`|
 
-*All latency numbers are PostgreSQL 17. See per-database breakdown below.*
-
 -----
 
-## 1 · Latency — PostgreSQL 17
+## 1 · Latency
 
 ### Read Queries
 
@@ -52,13 +50,9 @@
 
 *All times in microseconds unless noted. Lower is better.*
 
-## 2 · Latency — MySQL 9.x
-
-*Same structure as above.*
-
 -----
 
-## 3 · Overhead Analysis
+## 2 · Overhead Analysis
 
 ### Stack Depth
 
@@ -113,7 +107,7 @@
 
 -----
 
-## 4 · Crossover Report
+## 3 · Crossover Report
 
 ### ORM Overhead vs. Network Latency
 
@@ -143,7 +137,7 @@
 
 -----
 
-## 5 · Feature Matrix
+## 4 · Feature Matrix
 
 |Feature          |hibernate|spring-jpa|spring-jdbc|spring-jooq|spring-r2dbc|quarkus|quarkus-rx|mn-jdbc|mn-jpa|helidon|
 |-----------------|---------|----------|-----------|-----------|------------|-------|----------|-------|------|-------|
@@ -165,7 +159,6 @@
 |--------------|-----------------|
 |**Java**      |`{JAVA_VERSION}` |
 |**PostgreSQL**|`{PG_VERSION}`   |
-|**MySQL**     |`{MYSQL_VERSION}`|
 |**OS**        |`{OS}`           |
 |**CPU**       |`{CPU}`          |
 

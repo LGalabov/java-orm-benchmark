@@ -4,7 +4,6 @@ java = "21"
 
 # Database image tags (used in docker-compose and CI service containers)
 postgres = "17"
-mysql = "8.4"
 
 # Core libraries
 jmh = "1.37"
@@ -14,8 +13,7 @@ slf4j = "2.0.16"
 logback = "1.5.16"
 
 # JDBC drivers
-postgresql-driver = "42.7.5"
-mysql-driver = "9.2.0"
+postgresql-driver = "42.7.10"
 
 # Testing
 junit = "5.11.4"
@@ -37,7 +35,6 @@ jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", ver
 jackson-jsr310 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jsr310", version.ref = "jackson" }
 hikaricp = { module = "com.zaxxer:HikariCP", version.ref = "hikaricp" }
 postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql-driver" }
-mysql = { module = "com.mysql:mysql-connector-j", version.ref = "mysql-driver" }
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 
@@ -46,13 +43,12 @@ junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
 testcontainers-bom = { module = "org.testcontainers:testcontainers-bom", version.ref = "testcontainers" }
 testcontainers-junit = { module = "org.testcontainers:junit-jupiter" }
 testcontainers-postgresql = { module = "org.testcontainers:postgresql" }
-testcontainers-mysql = { module = "org.testcontainers:mysql" }
 assertj = { module = "org.assertj:assertj-core", version.ref = "assertj" }
 
 [bundles]
 jackson = ["jackson-databind", "jackson-jsr310"]
 testing = ["junit-jupiter", "assertj"]
-testcontainers-all = ["testcontainers-junit", "testcontainers-postgresql", "testcontainers-mysql"]
+testcontainers-all = ["testcontainers-junit", "testcontainers-postgresql"]
 
 [plugins]
 shadow = { id = "com.gradleup.shadow", version = "8.3.6" }

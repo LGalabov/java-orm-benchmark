@@ -8,16 +8,16 @@ The PDF README promises three outputs per run. This document specifies exactly w
 
 ### Report 1: Performance Summary
 
-**Purpose**: The raw comparison. Latency and throughput per subject per query type per database.
+**Purpose**: The raw comparison. Latency and throughput per subject per query type.
 
 **Contents**:
 
-|Metric     |Unit |Source        |Per                 |
-|-----------|-----|--------------|--------------------|
-|Latency p50|μs   |JMH SampleTime|subject × query × db|
-|Latency p95|μs   |JMH SampleTime|subject × query × db|
-|Latency p99|μs   |JMH SampleTime|subject × query × db|
-|Throughput |ops/s|JMH Throughput|subject × query × db|
+|Metric     |Unit |Source        |Per             |
+|-----------|-----|--------------|----------------|
+|Latency p50|μs   |JMH SampleTime|subject × query |
+|Latency p95|μs   |JMH SampleTime|subject × query |
+|Latency p99|μs   |JMH SampleTime|subject × query |
+|Throughput |ops/s|JMH Throughput|subject × query |
 
 **Queries covered**: All 10 from QUERIES.md (Q1–Q10). Database-specific features (CTE, JSONB, FTS, window functions) are tracked in the Feature Matrix but not benchmarked for latency.
 

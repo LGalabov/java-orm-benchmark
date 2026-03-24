@@ -28,19 +28,6 @@ jobs:
           --health-cmd="pg_isready -U bench -d ormbench"
           --health-interval=5s
           --health-retries=10
-      mysql:
-        image: mysql:8.4
-        env:
-          MYSQL_DATABASE: ormbench
-          MYSQL_USER: bench
-          MYSQL_PASSWORD: bench
-          MYSQL_ROOT_PASSWORD: rootbench
-        ports:
-          - "3306:3306"
-        options: >-
-          --health-cmd="mysqladmin ping -h localhost -ubench -pbench"
-          --health-interval=5s
-          --health-retries=10
 
     steps:
       - uses: actions/checkout@v4

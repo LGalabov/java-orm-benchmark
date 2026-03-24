@@ -1,6 +1,6 @@
 # java-orm-benchmark
 
-Real-world benchmarks for Java persistence frameworks across PostgreSQL and MySQL — latency, overhead, and the hidden costs that framework authors don't publish.
+Real-world benchmarks for Java persistence frameworks on PostgreSQL — latency, overhead, and the hidden costs that framework authors don't publish.
 
 ## Why This Exists
 
@@ -14,7 +14,7 @@ With the [sunsetting of TechEmpower Framework Benchmarks](https://github.com/Tec
 
 ### The full stack is the unit of measurement
 
-Most benchmarks test frameworks in isolation. Real applications are not isolated. This project measures the complete coordinate: **framework × database × query type**, as a single deployable combination. The question answered is the one developers actually face: how does Hibernate over PostgreSQL compare to jOOQ over MySQL, end to end, on the same workload?
+Most benchmarks test frameworks in isolation. Real applications are not isolated. This project measures the complete coordinate: **framework × database × query type**, as a single deployable combination. The question answered is the one developers actually face: how does Hibernate compare to jOOQ, or Spring Data JPA to Micronaut Data, end to end, on the same workload?
 
 ### Published numbers are put in context
 
@@ -88,14 +88,13 @@ These are not benchmarked for latency — they test whether the framework can ex
 |Batch insert strategy      |Does it use multi-row VALUES, addBatch(), or individual statements?|
 |Keyset pagination          |Does the framework support cursor-based pagination natively?       |
 
-## Databases
+## Database
 
-|Database  |Version|Why                                                        |
-|----------|-------|-----------------------------------------------------------|
-|PostgreSQL|17     |Advanced feature set (JSONB, FTS, CTEs, window functions)  |
-|MySQL     |9.x    |Widespread adoption, different optimization characteristics|
+|Database  |Version|Why                                                      |
+|----------|-------|---------------------------------------------------------|
+|PostgreSQL|17     |Advanced feature set (JSONB, FTS, CTEs, window functions)|
 
-Both databases run in Docker with identical hardware allocation. Schema and seed data are shared. Database-specific features (JSONB, FTS) are tracked in the Feature Matrix but not benchmarked for latency — their performance is database-side, not framework-side.
+PostgreSQL runs in Docker. Database-specific features (JSONB, FTS) are tracked in the Feature Matrix but not benchmarked for latency — their performance is database-side, not framework-side. MySQL support is deferred to v2 (see D14 in docs/DECISIONS.md).
 
 ## What the Results Show
 
@@ -124,7 +123,7 @@ java-orm-benchmark/
 ├── common/                  Shared: domain model, config, seeding, result models
 ├── benchmark-harness/       Central JMH runner with ORM adapter pattern
 ├── subjects/                One module per subject (jdbc-raw, hibernate-standalone, etc.)
-├── docker/                  Docker Compose for databases + benchmark runner
+├── docker/                  Docker Compose for PostgreSQL + benchmark runner
 ├── scripts/                 Automation: run benchmarks, upload results, generate reports
 ├── results/                 Benchmark output (gitignored locally, published to Gist)
 ├── .github/workflows/       CI (build/test) + Benchmark (manual dispatch)

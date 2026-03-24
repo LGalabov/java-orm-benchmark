@@ -21,8 +21,8 @@ public interface OrmAdapter extends AutoCloseable {
     List<OrderWithItems> findOrdersWithItems(long userId);
 
     // --- Read: N+1 vs Eager ---
-    List<Order> findOrdersNaive(String department);       // N+1: loads orders, then accesses user per order
-    List<Order> findOrdersOptimized(String department);   // Eager: loads orders + users in one query
+    List<Order> findOrdersNaive(String status);       // N+1: loads orders, then accesses user per order
+    List<Order> findOrdersOptimized(String status);   // Eager: loads orders + users in one query
 
     // --- Read: Aggregation ---
     List<UserSpendSummary> findTopSpenders(String department, int minOrders);
@@ -149,7 +149,7 @@ LIMIT 100
 -- Total: 1 query
 ```
 
-**Methods**: `findOrdersNaive(String department)` and `findOrdersOptimized(String department)`
+**Methods**: `findOrdersNaive(String status)` and `findOrdersOptimized(String status)`
 
 **Parameters**: status = 'SHIPPED' (the most common status at 30%).
 
@@ -213,20 +213,15 @@ WHERE department = ?
 **SQL**:
 
 ```sql
--- Postgres
-INSERT INTO users (name, email, department, created_at) VALUES (?, ?, ?, ?)
+INSERT INTO bench_users (name, email, department, created_at) VALUES (?, ?, ?, ?)
 RETURNING id
-
--- MySQL
-INSERT INTO users (name, email, department, created_at) VALUES (?, ?, ?, ?)
--- followed by SELECT LAST_INSERT_ID()
 ```
 
 **Method**: `insertUser(User user)` — returns generated `long id`.
 
 **Parameters**: Pre-generated User record (id is null — database assigns).
 
-**Cleanup**: Delete inserted row after each invocation.
+**Cleanup**: Benchmark inserts target a dedicated `bench_users` table (identical schema to `users`). The table is truncated in `@TearDown(Level.Invocation)`, which JMH excludes from measurement. This prevents table growth during warmup and avoids mixing DELETE overhead into INSERT measurements.
 
 **What we measure**: Round-trip cost for a single write. Whether the framework uses RETURNING or a separate SELECT. Whether it opens a transaction unnecessarily. The write-path baseline — batch insert numbers are meaningless without this.
 
@@ -239,7 +234,7 @@ INSERT INTO users (name, email, department, created_at) VALUES (?, ?, ?, ?)
 **SQL** (JDBC baseline):
 
 ```sql
-INSERT INTO users (name, email, department, created_at)
+INSERT INTO bench_users (name, email, department, created_at)
 VALUES (?, ?, ?, ?)
 -- batched via PreparedStatement.addBatch()
 ```
@@ -248,7 +243,7 @@ VALUES (?, ?, ?, ?)
 
 **Parameters**: Pre-generated list of User records (ids are null — database assigns). Sizes: 100, 1000, 10000. Run as three separate benchmark methods.
 
-**Cleanup**: Inserted rows are deleted after each invocation to keep the table at baseline size.
+**Cleanup**: Same as Q7 — inserts target `bench_users`, truncated in `@TearDown(Level.Invocation)`.
 
 -----
 
@@ -266,7 +261,7 @@ WHERE status = ?
 
 **Method**: `batchUpdateOrderStatus(String fromStatus, String toStatus)`
 
-**Parameters**: fromStatus = 'PENDING', toStatus = 'CONFIRMED'. After each invocation, reset the affected rows back to PENDING.
+**Parameters**: fromStatus = 'PENDING', toStatus = 'CONFIRMED'. Rows are reset back to 'PENDING' in `@TearDown(Level.Invocation)` so each measurement starts from the same state.
 
 **Expected result**: Number of rows updated (verified against expected count from seed data).
 

@@ -7,7 +7,6 @@ Four independent dimensions. Each subject is a coordinate across all four.
 |Database  |Version|Image        |
 |----------|-------|-------------|
 |PostgreSQL|17     |`postgres:17`|
-|MySQL     |9.1    |`mysql:9.1`  |
 
 ## Frameworks
 

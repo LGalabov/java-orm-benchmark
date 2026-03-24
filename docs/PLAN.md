@@ -4,7 +4,7 @@ Ordered segments for building the project incrementally. Each segment is self-co
 
 ## Current State
 
-The repo has a working Gradle multi-module skeleton with `common/` and `benchmark-harness/` modules, Docker Compose for Postgres and MySQL, CI workflows, and shell scripts. No ORM subjects exist yet. No benchmark code exists yet.
+The repo has a working Gradle multi-module skeleton with `common/` and `benchmark-harness/` modules, Docker Compose for Postgres, CI workflows, and shell scripts. No ORM subjects exist yet. No benchmark code exists yet.
 
 ## Segment Order
 
@@ -34,9 +34,7 @@ S13 Results Site (GitHub Pages)
 
 **Work**:
 
-1. Create SQL files in `common/src/main/resources/`:
-- `schema-postgres.sql` — tables + indexes per SCHEMA.md
-- `schema-mysql.sql` — tables + indexes per SCHEMA.md
+1. Create `common/src/main/resources/schema.sql` — tables + indexes per SCHEMA.md (including `bench_users`)
 1. Create domain records in `common/src/main/java/com/benchmark/model/`:
 - `User.java`, `Product.java`, `Order.java`, `OrderItem.java`
 - `UserSummary.java`, `UserSpendSummary.java`, `OrderWithItems.java`
@@ -44,13 +42,13 @@ S13 Results Site (GitHub Pages)
 1. Create `DataSeeder.java` — generates deterministic seed data via raw JDBC
 - Fixed seed (42)
 - Volumes per SCHEMA.md: 10K users, 5K products, 100K orders, 300K items
-- JSONB attributes generation for Postgres products
-- Separate `seedPostgres()` and `seedMysql()` methods for DB-specific columns
+- JSONB attributes generation for products
+1. After all inserts, run `ANALYZE` on every table (users, products, orders, order_items, bench_users) to ensure fresh planner statistics
 1. Create `DataSeeder` test that seeds a Testcontainers Postgres instance and verifies row counts
 
 **Verify**: `./gradlew :common:test` passes. Seeder creates correct row counts.
 
-**Dependencies**: Add to `libs.versions.toml`: testcontainers, postgresql JDBC driver, mysql-connector-j.
+**Dependencies**: Add to `libs.versions.toml`: testcontainers, postgresql JDBC driver.
 
 -----
 
@@ -123,8 +121,6 @@ S13 Results Site (GitHub Pages)
    public class PersistenceBenchmark {
        @Param({"jdbc"})  // expanded as subjects are added
        String subject;
-       @Param({"postgres", "mysql"})
-       String database;
        // ...
    }
    ```
