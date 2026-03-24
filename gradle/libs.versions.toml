@@ -1,0 +1,57 @@
+[versions]
+java = "21"
+# Target: Java 25 in CI (via setup-java). Update this when upgrading.
+
+# Database image tags (used in docker-compose and CI service containers)
+postgres = "17"
+mysql = "8.4"
+
+# Core libraries
+jmh = "1.37"
+jackson = "2.18.2"
+hikaricp = "6.2.1"
+slf4j = "2.0.16"
+logback = "1.5.16"
+
+# JDBC drivers
+postgresql-driver = "42.7.5"
+mysql-driver = "9.2.0"
+
+# Testing
+junit = "5.11.4"
+testcontainers = "1.20.4"
+assertj = "3.27.3"
+
+# ORM versions (uncomment and set as frameworks are chosen)
+# hibernate = "6.6.x"
+# jooq = "3.19.x"
+# mybatis = "3.5.x"
+# jdbi = "3.47.x"
+# spring-boot = "3.4.x"
+
+[libraries]
+jmh-core = { module = "org.openjdk.jmh:jmh-core", version.ref = "jmh" }
+jmh-annprocess = { module = "org.openjdk.jmh:jmh-generator-annprocess", version.ref = "jmh" }
+jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
+jackson-jsr310 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jsr310", version.ref = "jackson" }
+hikaricp = { module = "com.zaxxer:HikariCP", version.ref = "hikaricp" }
+postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql-driver" }
+mysql = { module = "com.mysql:mysql-connector-j", version.ref = "mysql-driver" }
+slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+logback = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+testcontainers-bom = { module = "org.testcontainers:testcontainers-bom", version.ref = "testcontainers" }
+testcontainers-junit = { module = "org.testcontainers:junit-jupiter" }
+testcontainers-postgresql = { module = "org.testcontainers:postgresql" }
+testcontainers-mysql = { module = "org.testcontainers:mysql" }
+assertj = { module = "org.assertj:assertj-core", version.ref = "assertj" }
+
+[bundles]
+jackson = ["jackson-databind", "jackson-jsr310"]
+testing = ["junit-jupiter", "assertj"]
+testcontainers-all = ["testcontainers-junit", "testcontainers-postgresql", "testcontainers-mysql"]
+
+[plugins]
+shadow = { id = "com.gradleup.shadow", version = "8.3.6" }

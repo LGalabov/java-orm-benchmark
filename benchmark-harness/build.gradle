@@ -1,0 +1,22 @@
+// Shadow plugin (com.gradleup.shadow) is declared in libs.versions.toml
+// and will be applied here when benchmark code is added:
+// plugins {
+//     alias(libs.plugins.shadow)
+// }
+
+dependencies {
+    implementation project(':common')
+    implementation libs.jmh.core
+    annotationProcessor libs.jmh.annprocess
+    // ORM module dependencies added as they're created:
+    // implementation project(':orm-jdbc')
+}
+
+// Uncomment when shadow plugin is applied:
+// shadowJar {
+//     archiveBaseName = 'benchmarks'
+//     archiveClassifier = ''
+//     manifest {
+//         attributes 'Main-Class': 'com.lgalabov.ormbench.harness.BenchmarkRunner'
+//     }
+// }

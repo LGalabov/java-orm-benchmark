@@ -1,0 +1,6 @@
+dependencies {
+    api libs.bundles.jackson
+    api libs.hikaricp
+    api libs.postgresql
+    api libs.mysql
+}

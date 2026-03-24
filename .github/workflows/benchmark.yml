@@ -1,0 +1,72 @@
+name: Benchmark
+on:
+  workflow_dispatch:
+    inputs:
+      quick:
+        description: 'Quick mode (fewer iterations)'
+        type: boolean
+        default: false
+
+concurrency:
+  group: benchmark
+  cancel-in-progress: false
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: ormbench
+          POSTGRES_USER: bench
+          POSTGRES_PASSWORD: bench
+        ports:
+          - "5432:5432"
+        options: >-
+          --health-cmd="pg_isready -U bench -d ormbench"
+          --health-interval=5s
+          --health-retries=10
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: ormbench
+          MYSQL_USER: bench
+          MYSQL_PASSWORD: bench
+          MYSQL_ROOT_PASSWORD: rootbench
+        ports:
+          - "3306:3306"
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -ubench -pbench"
+          --health-interval=5s
+          --health-retries=10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 25
+          cache: gradle
+
+      - name: Build
+        run: ./gradlew clean shadowJar
+
+      - name: Run benchmarks
+        run: java -jar benchmark-harness/build/libs/benchmarks.jar
+        env:
+          QUICK_MODE: ${{ inputs.quick }}
+
+      - name: Upload results artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results-${{ github.run_number }}
+          path: results/latest.json
+
+      - name: Upload to Gist
+        env:
+          GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
+          GIST_ID: ${{ vars.GIST_ID }}
+        run: bash scripts/upload-gist.sh results/latest.json

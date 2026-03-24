@@ -1,0 +1,14 @@
+pluginManagement {
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+rootProject.name = 'java-orm-benchmark'
+
+include 'common'
+include 'benchmark-harness'
+// ORM modules added here as decided:
+// include 'orm-jdbc'
+// include 'orm-hibernate'

@@ -1,0 +1,7 @@
+FROM eclipse-temurin:25-jre-alpine
+
+WORKDIR /app
+
+COPY benchmark-harness/build/libs/benchmarks.jar /app/benchmarks.jar
+
+ENTRYPOINT ["java", "-jar", "/app/benchmarks.jar"]
