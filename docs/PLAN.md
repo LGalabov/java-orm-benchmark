@@ -35,7 +35,7 @@ S13 Results Site (GitHub Pages)
 **Work**:
 
 1. Create `common/src/main/resources/schema.sql` — tables + indexes per SCHEMA.md (including `bench_users`)
-1. Create domain records in `common/src/main/java/com/benchmark/model/`:
+1. Create domain records in `common/src/main/java/com/lgalabov/ormbench/common/model/`:
 - `User.java`, `Product.java`, `Order.java`, `OrderItem.java`
 - `UserSummary.java`, `UserSpendSummary.java`, `OrderWithItems.java`
 1. Create `BenchmarkConfig.java` — holds DB connection params, loaded from env vars or properties file
@@ -92,7 +92,7 @@ S13 Results Site (GitHub Pages)
 1. Every query uses the exact SQL from QUERIES.md
 1. Result mapping: manual ResultSet → record via constructor
 1. Batch insert: `PreparedStatement.addBatch()` + `executeBatch()`
-1. Register both via `META-INF/services/com.benchmark.OrmAdapter`
+1. Register both via `META-INF/services/com.lgalabov.ormbench.common.OrmAdapter`
 1. Write tests that run each adapter method against Testcontainers Postgres and verify results
 
 **Verify**: `./gradlew :subjects:jdbc-raw:test :subjects:jdbc-hikari:test` passes. All 10 query types return correct results.

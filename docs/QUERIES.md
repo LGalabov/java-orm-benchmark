@@ -15,7 +15,7 @@ public interface OrmAdapter extends AutoCloseable {
 
     // --- Read: Simple ---
     User findUserById(long id);
-    List<User> findUsersByDepartment(String department, String sortBy, int limit, int offset);
+    List<User> findUsersByDepartment(String department, int limit, int offset);
 
     // --- Read: Join ---
     List<OrderWithItems> findOrdersWithItems(long userId);
@@ -88,7 +88,7 @@ ORDER BY created_at DESC
 LIMIT ? OFFSET ?
 ```
 
-**Method**: `findUsersByDepartment(String department, String sortBy, int limit, int offset)`
+**Method**: `findUsersByDepartment(String department, int limit, int offset)`
 
 **Parameters**: Random department from the 8 seeded departments. limit = 20, offset = 0.
 
@@ -156,6 +156,8 @@ LIMIT 100
 **Expected result**: Both methods return the same data. The benchmark shows the cost of N+1 vs the cost of a single JOIN. For raw JDBC, both are implemented manually. For Hibernate, naive = lazy loading default, optimized = JOIN FETCH or entity graph. For Micronaut Data JDBC, there's no lazy loading so both should be equivalent.
 
 **Why this matters**: This is the single most impactful ORM performance difference in real applications. A developer choosing between frameworks needs to know: how bad is the default? How easy is the fix?
+
+**Implementation note**: The naive method MUST fetch the User for each order even though the return type is `List<Order>`. The point is measuring the cost of N+1 round-trips. For JDBC, this means executing the User SELECT for every order and reading the ResultSet. For Hibernate, this means accessing a lazy-loaded field (e.g. `order.getUser().getName()`) to trigger the proxy load. The fetched User data can be discarded — what matters is that the database round-trip actually happens. JMH's `Blackhole.consume()` should be used to prevent dead-code elimination of the User lookups.
 
 -----
 
