@@ -56,6 +56,12 @@ Rationale behind key choices. Reference this when implementing — it answers "w
 
 **Why**: SampleTime gives p50/p95/p99. Throughput gives ops/sec. Both needed.
 
+## D9: Postgres-specific features are capability checks, not timed benchmarks
+
+**Decision**: JSONB containment, full-text search, CTEs, and window functions are tracked in the Feature Matrix as capability checks (native / passthrough / blocked) but are not timed benchmark queries.
+
+**Why**: These features test whether the framework can express Postgres-specific SQL, not how fast the database executes it. The database execution time is identical regardless of framework — only the expressibility differs. The Feature Matrix captures this without adding noise to the latency numbers.
+
 ## D10: GPL-3.0 license
 
 **Decision**: GPL-3.0 for now. May reconsider before public launch.
