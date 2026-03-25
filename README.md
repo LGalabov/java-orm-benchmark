@@ -72,21 +72,6 @@ Crossover: at what data volume, concurrency, and query complexity does each abst
 
 All results published to a [public GitHub Gist](https://gist.github.com/LGalabov/0c660c130278e8a7b39fc702d8693f4e) on every CI run.
 
-## Project Structure
-
-```
-java-orm-benchmark/
-├── common/                  Shared: domain model, config, seeding, result models
-├── benchmark-harness/       Central JMH runner with ORM adapter pattern
-├── subjects/                One module per subject (jdbc-raw, hibernate-standalone, etc.)
-├── docker/                  Docker Compose for PostgreSQL + benchmark runner
-├── scripts/                 Automation: run benchmarks, upload results, generate reports
-├── results/                 Benchmark output (gitignored locally, published to Gist)
-├── .github/workflows/       CI (build/test) + Benchmark (manual dispatch)
-├── docs/                    Project documentation driving development
-└── gradle/libs.versions.toml   Single source of truth for all versions
-```
-
 ## Quick Start
 
 ```bash
@@ -127,4 +112,4 @@ GIST_TOKEN=<your-token> GIST_ID=<gist-id> ./scripts/upload-gist.sh results/lates
 
 ## License
 
-GPL-3.0. See <LICENSE>.
+GPL-3.0. See [LICENSE](LICENSE).
