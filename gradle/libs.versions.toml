@@ -1,6 +1,5 @@
 [versions]
 java = "21"
-# Target: Java 25 in CI (via setup-java). Update this when upgrading.
 
 # Database image tags (used in docker-compose and CI service containers)
 postgres = "17"
