@@ -11,6 +11,20 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: ormbench
+          POSTGRES_USER: bench
+          POSTGRES_PASSWORD: bench
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U bench -d ormbench"
+          --health-interval 3s
+          --health-timeout 3s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
 
